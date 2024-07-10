@@ -1,78 +1,105 @@
 from imutils.video import VideoStream
-from imutils.video import FPS
 import argparse
-import imutils
 import time
 import cv2 as cv
+import datetime
+import os
+import csv
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str, help="path to input video file")
-ap.add_argument("-t", "--tracker", type=str, default="kcf", help="OpenCV object tracker type, csrt, kcf, mil")
+ap.add_argument("-t", "--tracker", type=str, default="kcf", help="OpenCV object tracker type")
+ap.add_argument("-i", "--init", action="store_true", help="Initialize object selection before starting video")
 args = vars(ap.parse_args())
 
 OPENCV_OBJECT_TRACKERS = {
-    "csrt": cv.TrackerCSRT_create,
-    "kcf": cv.TrackerKCF_create,
-    "mil": cv.TrackerMIL_create,
+    "csrt": cv.legacy.TrackerCSRT_create,
+    "kcf": cv.legacy.TrackerKCF_create,
+    "mil": cv.legacy.TrackerMIL_create,
 }
-tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
-initBB = None
 
-print("[INFO] starting video stream...")
-vs = None
-if args["video"]:
-    vs = cv.VideoCapture(args["video"])
-else:
+trackers = cv.legacy.MultiTracker_create()
+object_count = 0
+
+
+def get_current_time_str():
+    now = datetime.datetime.now()
+    return now.strftime("%d-%m-%Y-%H:%M:%S:%f")
+
+
+logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../logs")
+os.makedirs(logs_dir, exist_ok=True)
+now = datetime.datetime.now()
+output_file = os.path.join(logs_dir, now.strftime("%d-%m-%Y-%H:%M:%S") + ".csv")
+
+with open(output_file, "w", newline='') as f:
+    writer = csv.writer(f)
+    header = ["time"]
+    for i in range(1, 13):  # Maximum of 12 objects
+        header.extend([f"x{i}", f"y{i}"])
+    writer.writerow(header)
+
+if not args.get("video", False):
+    print("[INFO] starting video stream...")
     vs = VideoStream(src=0).start()
-time.sleep(1.0)
+    time.sleep(1.0)
+else:
+    vs = cv.VideoCapture(args["video"])
 
-fps = None
-
-try:
-    while True:
+if args.get("init", False):
+    if not args.get("video", False):
         frame = vs.read()
-
-        if args["video"]:
-            frame = frame[1] if frame is not None else frame
-
-        if frame is None:
-            print("[INFO] no frame read from the stream, exiting...")
-            break
-
-        frame = imutils.resize(frame, width=500)
-        (H, W) = frame.shape[:2]
-
-        info = []  # Initialize info list
-        if initBB is not None:
-            (success, box) = tracker.update(frame)
-            if success:
-                (x, y, w, h) = [int(v) for v in box]
-                cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            fps.update()
-            fps.stop()
-            info = [
-                ("Tracker", args["tracker"]),
-                ("Success", "Yes" if success else "No"),
-                ("FPS", "{:.2f}".format(fps.fps()))
-            ]
-
-        for (i, (k, v)) in enumerate(info):
-            text = "{}: {}".format(k, v)
-            cv.putText(frame, text, (10, H - ((i * 20) + 20)),
-                       cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-
-        cv.imshow("Frame", frame)
-        key = cv.waitKey(1) & 0xFF
-
-        if key == ord("s"):
-            initBB = cv.selectROI("Frame", frame, fromCenter=False, showCrosshair=True)
-            tracker.init(frame, initBB)
-            fps = FPS().start()
-        elif key == ord("q"):
-            break
-finally:
-    if args["video"]:
-        vs.release()
     else:
-        vs.stop()
-    cv.destroyAllWindows()
+        ret, frame = vs.read()
+
+    if frame is not None:
+        while True:
+            box = cv.selectROI("Frame", frame, False, False)
+            tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
+            trackers.add(tracker, frame, box)
+            object_count += 1
+            key = cv.waitKey(0) & 0xFF
+            if key == ord("q"):
+                break
+        cv.destroyAllWindows()
+
+while True:
+    frame = vs.read()
+    frame = frame[1] if args.get("video", False) else frame
+
+    if frame is None:
+        break
+
+    (success, boxes) = trackers.update(frame)
+    current_time_str = get_current_time_str()
+
+    data = [current_time_str]
+    for box in boxes[:12]:
+        (x, y, w, h) = [int(v) for v in box]
+        data.extend([x, y])
+        cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        object_id = (len(data) // 2)
+        cv.putText(frame, f"OBJECT_{object_id}", (x, y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+    data.extend([''] * (25 - len(data)))
+
+    with open(output_file, "a", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
+
+    cv.imshow("Frame", frame)
+    key = cv.waitKey(1) & 0xFF
+
+    if key == ord("s") and not args.get("init", False):
+        box = cv.selectROI("Frame", frame, True, False)
+        tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
+        trackers.add(tracker, frame, box)
+        object_count += 1
+    elif key == ord("q"):
+        break
+
+if not args.get("video", False):
+    vs.stop()
+else:
+    vs.release()
+cv.destroyAllWindows()
