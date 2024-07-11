@@ -5,11 +5,13 @@ import cv2 as cv
 import datetime
 import os
 import csv
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+import json
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str, help="path to input video file")
 ap.add_argument("-t", "--tracker", type=str, default="kcf", help="OpenCV object tracker type")
-ap.add_argument("-i", "--init", action="store_true", help="Initialize object selection before starting video")
 args = vars(ap.parse_args())
 
 OPENCV_OBJECT_TRACKERS = {
@@ -46,21 +48,99 @@ if not args.get("video", False):
 else:
     vs = cv.VideoCapture(args["video"])
 
-if args.get("init", False):
+
+def save_template(template_name, initial_boxes):
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    os.makedirs(templates_dir, exist_ok=True)
+
+    # Determine the next template ID
+    existing_templates = [f for f in os.listdir(templates_dir) if f.endswith(".json")]
+    next_template_id = len(existing_templates) + 1
+
+    template_file = os.path.join(templates_dir, f"{next_template_id}.json")
+    with open(template_file, "w") as f:
+        json.dump({"name": template_name, "boxes": initial_boxes}, f)
+
+
+def load_template(template_id):
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    template_file = os.path.join(templates_dir, f"{template_id}.json")
+    with open(template_file, "r") as f:
+        template_data = json.load(f)
+    return template_data
+
+
+def delete_template(template_id):
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    template_file = os.path.join(templates_dir, f"{template_id}.json")
+    if os.path.exists(template_file):
+        os.remove(template_file)
+        return True
+    return False
+
+
+def list_templates():
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    os.makedirs(templates_dir, exist_ok=True)
+    templates = []
+    for filename in os.listdir(templates_dir):
+        if filename.endswith(".json"):
+            with open(os.path.join(templates_dir, filename), "r") as f:
+                template_data = json.load(f)
+                templates.append({"id": filename[:-5], "name": template_data["name"]})
+    return templates
+
+
+root = tk.Tk()
+root.withdraw()  # Hide the main window
+
+action = simpledialog.askstring("Input",
+                                "Choose an action: Create a new template (C), Load a template (L), Delete a template (D)")
+
+initial_boxes = []
+
+if action == 'C':
+    template_name = simpledialog.askstring("Input", "Enter the template name:")
+    object_count = simpledialog.askinteger("Input", "Enter the number of objects to track:", minvalue=1, maxvalue=12)
+    for i in range(object_count):
+        x = simpledialog.askinteger("Input", f"Enter the initial x coordinate for object {i + 1}:")
+        y = simpledialog.askinteger("Input", f"Enter the initial y coordinate for object {i + 1}:")
+        initial_boxes.append((x, y, 50, 50))  # Create a box centered around (x, y)
+    save_template(template_name, initial_boxes)
+elif action == 'L':
+    templates = list_templates()
+    if not templates:
+        messagebox.showinfo("Info", "No templates available.")
+        exit()
+    template_choices = "\n".join([f"{template['id']}: {template['name']}" for template in templates])
+    selected_template_id = simpledialog.askstring("Input",
+                                                  f"Available templates:\n{template_choices}\nEnter the template ID to load:")
+    template_data = load_template(selected_template_id)
+    initial_boxes = template_data["boxes"]
+elif action == 'D':
+    templates = list_templates()
+    if not templates:
+        messagebox.showinfo("Info", "No templates available.")
+        exit()
+    template_choices = "\n".join([f"{template['id']}: {template['name']}" for template in templates])
+    selected_template_id = simpledialog.askstring("Input",
+                                                  f"Available templates:\n{template_choices}\nEnter the template ID to delete:")
+    if delete_template(selected_template_id):
+        messagebox.showinfo("Info", f"Template {selected_template_id} deleted successfully.")
+    else:
+        messagebox.showinfo("Info", f"Template {selected_template_id} not found.")
+    exit()
+
+if initial_boxes:
     if not args.get("video", False):
         frame = vs.read()
     else:
         ret, frame = vs.read()
 
     if frame is not None:
-        while True:
-            box = cv.selectROI("Frame", frame, False, False)
+        for box in initial_boxes:
             tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
             trackers.add(tracker, frame, box)
-            object_count += 1
-            key = cv.waitKey(0) & 0xFF
-            if key == ord("q"):
-                break
         cv.destroyAllWindows()
 
 while True:
@@ -90,7 +170,7 @@ while True:
     cv.imshow("Frame", frame)
     key = cv.waitKey(1) & 0xFF
 
-    if key == ord("s") and not args.get("init", False):
+    if key == ord("s"):
         box = cv.selectROI("Frame", frame, True, False)
         tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
         trackers.add(tracker, frame, box)
