@@ -11,20 +11,7 @@ import json
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str, help="path to input video file")
-ap.add_argument("-t", "--tracker", type=str, default="kcf", help="OpenCV object tracker type")
 args = vars(ap.parse_args())
-
-OPENCV_OBJECT_TRACKERS = {
-    "csrt": cv.legacy.TrackerCSRT_create,
-    "kcf": cv.legacy.TrackerKCF_create,
-    "mil": cv.legacy.TrackerMIL_create,
-    "mosse": cv.legacy.TrackerMOSSE_create,
-    "medianflow": cv.legacy.TrackerMedianFlow_create,
-    "boosting": cv.legacy.TrackerBoosting_create,
-}
-
-trackers = cv.legacy.MultiTracker_create()
-object_count = 0
 
 logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../logs")
 os.makedirs(logs_dir, exist_ok=True)
@@ -47,7 +34,7 @@ else:
 
 
 def save_template(template_name, initial_boxes):
-    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "colortemplate"))
     os.makedirs(templates_dir, exist_ok=True)
 
     # Determine the next template ID
@@ -60,7 +47,7 @@ def save_template(template_name, initial_boxes):
 
 
 def load_template(template_id):
-    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "colortemplate"))
     template_file = os.path.join(templates_dir, f"{template_id}.json")
     with open(template_file, "r") as f:
         template_data = json.load(f)
@@ -68,7 +55,7 @@ def load_template(template_id):
 
 
 def delete_template(template_id):
-    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "colortemplate"))
     template_file = os.path.join(templates_dir, f"{template_id}.json")
     if os.path.exists(template_file):
         os.remove(template_file)
@@ -77,7 +64,7 @@ def delete_template(template_id):
 
 
 def list_templates():
-    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "colortemplate"))
     os.makedirs(templates_dir, exist_ok=True)
     templates = []
     for filename in os.listdir(templates_dir):
@@ -128,6 +115,11 @@ elif action == 'D':
         messagebox.showinfo("Info", f"Template {selected_template_id} not found.")
     exit()
 
+# Placeholder for colortracker function
+def colortracker(frame, initial_boxes):
+    # Implement the color tracking logic here
+    pass
+
 if initial_boxes:
     if not args.get("video", False):
         frame = vs.read()
@@ -135,12 +127,7 @@ if initial_boxes:
         ret, frame = vs.read()
 
     if frame is not None:
-        for box in initial_boxes:
-            if args["tracker"] == "goturn":
-                tracker = cv.TrackerGOTURN_create()
-            else:
-                tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
-            trackers.add(tracker, frame, box)
+        colortracker(frame, initial_boxes)
         cv.destroyAllWindows()
 
 fps = vs.get(cv.CAP_PROP_FPS) if args.get("video", False) else 30
@@ -154,18 +141,12 @@ while True:
     if frame is None:
         break
 
-    (success, boxes) = trackers.update(frame)
     frame_count += 1
     elapsed_time = time.time() - start_time
     current_fps = frame_count / elapsed_time if elapsed_time > 0 else 0
 
     data = [frame_count]
-    for box in boxes[:12]:
-        (x, y, w, h) = [int(v) for v in box]
-        data.extend([x, y])
-        cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        object_id = (len(data) // 2)
-        cv.putText(frame, f"OBJECT_{object_id}", (x, y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    colortracker(frame, initial_boxes)  # Call the colortracker function here
 
     cv.putText(frame, f"FPS: {current_fps:.2f}", (10, frame.shape[0] - 10), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0),
                2)
@@ -179,15 +160,7 @@ while True:
     cv.imshow("Frame", frame)
     key = cv.waitKey(1) & 0xFF
 
-    if key == ord("s"):
-        box = cv.selectROI("Frame", frame, True, False)
-        if args["tracker"] == "goturn":
-            tracker = cv.TrackerGOTURN_create()
-        else:
-            tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
-        trackers.add(tracker, frame, box)
-        object_count += 1
-    elif key == ord("q"):
+    if key == ord("q"):
         break
 
 if not args.get("video", False):
