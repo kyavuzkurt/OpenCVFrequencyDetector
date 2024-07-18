@@ -1,94 +1,54 @@
-# Multi-Object Tracker
+# Video Processing and Frequency Detection
 
-This project uses OpenCV to track multiple objects in a video stream. The objects can be manually selected by the user, and their positions are logged over time in a CSV file. The tracker supports different tracking algorithms and can initialize object selection before starting the video stream.
+This repository provides tools for video processing, including video cropping, frequency detection, and color-based object tracking.
 
 ## Requirements
 
-To run this project, you need the following libraries:
-
-- OpenCV
-- imutils
-
-You can install these dependencies using pip:
+To run the code, install the required Python packages using the following command:
 
 ```bash
-pip install opencv-python opencv-contrib-python imutils
-```
+pip install -r requirements.txt
 
-## Functions
+Usage
+Video Cropping and Frequency Detection
 
-### Key Features
+The main script for video cropping and frequency detection is main.py. It processes a video file, crops regions of interest, and analyzes the cropped segments.
+Running the Script
 
-- **Multi-object tracking**: Track multiple objects simultaneously.
-- **Manual object selection**: Allows the user to manually select objects to be tracked.
-- **Different tracker types**: Supports various OpenCV tracking algorithms (CSRT, KCF, MIL).
-- **Data logging**: Logs the positions of the tracked objects over time in a CSV file.
-- **Initialization mode**: Allows object selection before starting the video stream.
+To run the script, use the following command:
 
-### Code Breakdown
+bash
 
-- **Object Trackers**: Define the available OpenCV object trackers.
-- **Video Stream Initialization**: Start video stream from webcam or video file.
-- **Object Selection**: Allows manual selection of objects to be tracked.
-- **Tracking and Logging**: Tracks objects frame by frame and logs their positions in a CSV file.
+python main.py --input <input_video_file> --output <output_directory>
 
-## Usage
+Template Management
 
-### Command Line Arguments
+The trackerdemo.py script provides functionalities for creating, loading, and deleting templates for object tracking.
+Running the Script
 
-- `--video`: Path to input video file. If not provided, the webcam is used.
-- `--tracker`: OpenCV object tracker type (default is `kcf`). Options: `csrt`, `kcf`, `mil`.
-- `--init`: Initialize object selection before starting the video.
+To run the script, use the following command:
 
-### Running the Code
+bash
 
-1. **Using Webcam**
+python trackerdemo.py --action <create|load|delete> --template <template_file>
 
-    To start tracking using the webcam with the default tracker (KCF):
+Color Tracking Demo
 
-    ```bash
-    python multi_object_tracker.py
-    ```
+The colortrackerdemo.py script demonstrates color-based object tracking using predefined HSV ranges.
+Running the Script
 
-    To initialize object selection before starting the video:
+To run the script, use the following command:
 
-    ```bash
-    python multi_object_tracker.py --init
-    ```
+bash
 
-2. **Using Video File**
+python colortrackerdemo.py --input <input_video_file> --output <output_directory>
 
-    To start tracking using a video file:
+Logging
 
-    ```bash
-    python3 multi_object_tracker.py --video path/to/your/video.mp4
-    ```
+The scripts use Python's logging module to log debug information. The log level is set to DEBUG to provide detailed information about the execution.
+Output
 
-    To initialize object selection before starting the video:
+The scripts generate CSV files containing the detected object coordinates and other relevant data. The output files are named based on the current date and time to ensure uniqueness.
+Contributing
 
-    ```bash
-    python3 multi_object_tracker.py --video path/to/your/video.mp4 --init
-    ```
-
-### Controls
-
-- Press `s` to select a new object to track during the video stream.
-- Press `q` to quit the video stream.
-
-### Output
-
-The positions of the tracked objects are logged in a CSV file located in the `logs` directory (one level up from the script's directory). The filename is in the format `DD-MM-YYYY-HH:MM:SS.csv`.
-
-### Example CSV Output
-
-The CSV file contains the following columns:
-
-```
-time,x1,y1,x2,y2,...,x12,y12
-```
-
-Each row represents a frame, with the positions of up to 12 tracked objects and the timestamp.
-
----
-
-If you need any further adjustments or have additional content to add, feel free to let me know!
+Feel free to fork this repository and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
