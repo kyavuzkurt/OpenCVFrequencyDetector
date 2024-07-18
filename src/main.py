@@ -7,6 +7,7 @@ import subprocess
 import concurrent.futures
 import numpy as np
 import logging
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -39,7 +40,10 @@ class VideoCropper:
         mask_final = cv.erode(mask_final, kernel, iterations=2)
         mask_final = cv.dilate(mask_final, kernel, iterations=2)
 
-        cv.imwrite('mask_final.png', mask_final)  # Save the mask for debugging
+        # Save the mask for debugging
+        mask_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../masks")
+        os.makedirs(mask_dir, exist_ok=True)
+        cv.imwrite(os.path.join(mask_dir, 'mask_final.png'), mask_final)
 
         contours, _ = cv.findContours(mask_final, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
@@ -58,7 +62,9 @@ class VideoCropper:
         video_paths = []
 
         def crop_video(region, i):
-            output_path = f"cropped_video_{i}.mp4"
+            cropped_videos_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../cropped_videos")
+            os.makedirs(cropped_videos_dir, exist_ok=True)
+            output_path = os.path.join(cropped_videos_dir, f"cropped_video_{i}.mp4")
             x, y, w, _ = region  
 
             tolerance = 10
@@ -121,7 +127,9 @@ def main():
     frequency_detector.get_frequency_data(cropped_videos)
 
     now = datetime.datetime.now()
-    output_file = now.strftime("%d-%m-%Y_%H:%M:%S") + ".csv"
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../output_csvs")
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, now.strftime("%d-%m-%Y_%H:%M:%S") + ".csv")
     logging.debug(f"Output file: {output_file}")
 
     with open(output_file, 'w', newline='') as outfile:
@@ -129,7 +137,7 @@ def main():
         writer.writerow(['Frame', 'X', 'Y', 'Width', 'Height'])
 
         for i, video_path in enumerate(cropped_videos):
-            input_file = f'output_{i}.csv'
+            input_file = os.path.join(output_dir, f'output_{i}.csv')
             logging.debug(f"Reading input file: {input_file}")
             with open(input_file, 'r') as infile:
                 reader = csv.reader(infile)

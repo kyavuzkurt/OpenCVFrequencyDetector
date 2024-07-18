@@ -8,4 +8,7 @@
 /src/__pycache__
 /src/GL010032.LRV
 /videodata
+/cropped_videos
+/masks
+/output_csvs
 
