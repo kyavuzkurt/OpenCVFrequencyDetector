@@ -3,10 +3,6 @@ import numpy as np
 import csv  # Import csv module
 import time
 
-# Remove the problematic import
-# from main import hue_low, saturation_low, value_low, hue_high, saturation_high, value_high
-
-# Define the HSV ranges directly in colordetector.py
 hue_low = 25
 saturation_low = 50
 value_low = 50
@@ -17,8 +13,8 @@ value_high = 255
 class ColorDetector:
     def __init__(self, video_paths):
         self.video_paths = video_paths
-        self.hue_low, self.saturation_low, self.value_low = hue_low, saturation_low, value_low  # Use defined values
-        self.hue_high, self.saturation_high, self.value_high = hue_high, saturation_high, value_high  # Use defined values
+        self.hue_low, self.saturation_low, self.value_low = hue_low, saturation_low, value_low  
+        self.hue_high, self.saturation_high, self.value_high = hue_high, saturation_high, value_high  
         self.frame_count = 0
 
         self.setup_trackbars()
@@ -27,13 +23,12 @@ class ColorDetector:
         cv.namedWindow('HSV sliders')
         cv.moveWindow('HSV sliders', 50, 50)
 
-        cv.createTrackbar('Hue Low', 'HSV sliders', self.hue_low, 179, self.onTracker1)  # Use initial values
-        cv.createTrackbar('Saturation Low', 'HSV sliders', self.saturation_low, 255, self.onTracker2)  # Use initial values
-        cv.createTrackbar('Value Low', 'HSV sliders', self.value_low, 255, self.onTracker3)  # Use initial values
-        cv.createTrackbar('Hue High', 'HSV sliders', self.hue_high, 179, self.onTracker4)  # Use initial values
-        cv.createTrackbar('Saturation High', 'HSV sliders', self.saturation_high, 255, self.onTracker5)  # Use initial values
-        cv.createTrackbar('Value High', 'HSV sliders', self.value_high, 255, self.onTracker6)  # Use initial values
-
+        cv.createTrackbar('Hue Low', 'HSV sliders', self.hue_low, 179, self.onTracker1)         
+        cv.createTrackbar('Saturation Low', 'HSV sliders', self.saturation_low, 255, self.onTracker2)  
+        cv.createTrackbar('Value Low', 'HSV sliders', self.value_low, 255, self.onTracker3)  
+        cv.createTrackbar('Hue High', 'HSV sliders', self.hue_high, 179, self.onTracker4) 
+        cv.createTrackbar('Saturation High', 'HSV sliders', self.saturation_high, 255, self.onTracker5)  
+        cv.createTrackbar('Value High', 'HSV sliders', self.value_high, 255, self.onTracker6)
     def onTracker1(self, val):
         self.hue_low = val
         print("Hue Low", self.hue_low)

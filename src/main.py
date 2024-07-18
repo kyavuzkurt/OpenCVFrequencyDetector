@@ -102,7 +102,7 @@ class FrequencyDetector:
         for i, video_path in enumerate(video_paths):
             logging.debug(f"Processing video: {video_path}")
             color_detector = cd.ColorDetector([video_path])
-            color_detector.run(video_path, i)  # Pass the video path and index to the run method
+            color_detector.run(video_path, i)  
             frame_count = color_detector.video.get(cv.CAP_PROP_FRAME_COUNT)
             logging.debug(f"Video: {video_path}, Frame Count: {frame_count}")
             color_detector.video.release()
