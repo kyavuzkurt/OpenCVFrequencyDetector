@@ -1,0 +1,10 @@
+opencv-python-headless
+numpy
+imutils
+tkinter
+argparse
+concurrent.futures
+csv
+datetime
+logging
+subprocess
