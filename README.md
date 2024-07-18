@@ -12,7 +12,7 @@ pip install -r requirements.txt
 
 ### Video Cropping and Frequency Detection
 
-The main script for video cropping and frequency detection is `main.py`. It processes a video file, crops regions of interest, and analyzes the cropped segments.
+The main script for video cropping and frequency detection is `main.py`. It processes a video file, crops regions of interest, and analyzes the cropped segments. Change the initial HSV values from `main.py` and `colordetector.py` to your desired values to be tracked.
 
 #### Running the Script
 
