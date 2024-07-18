@@ -6,10 +6,12 @@ This repository provides tools for video processing, including video cropping, f
 
 To run the code, install the required Python packages using the following command:
 
-```bash
+bash
+
 pip install -r requirements.txt
 
-Usage
+
+## Usage
 Video Cropping and Frequency Detection
 
 The main script for video cropping and frequency detection is main.py. It processes a video file, crops regions of interest, and analyzes the cropped segments.
