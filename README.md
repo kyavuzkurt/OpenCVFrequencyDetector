@@ -11,8 +11,8 @@ pip install -r requirements.txt
 ## Usage
 
 ### Frequency Detection
-
-Simply run the run.py. Amplitude,frequency,a and percentage fields are for naming convention.
+You can change the HSV values for your applications from colordetector.py. 
+After modifying your intended values simply run the run.py. Amplitude,frequency,a and percentage fields are for naming convention.
 
 ## Output
 
