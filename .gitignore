@@ -126,6 +126,7 @@ logs/
 *.csv
 *.mp4
 *.MP4
+*.png
 
 # Output directories
 masks/
