@@ -124,6 +124,8 @@ dmypy.json
 logs/
 *.log
 *.csv
+*.mp4
+*.MP4
 
 # Output directories
 masks/

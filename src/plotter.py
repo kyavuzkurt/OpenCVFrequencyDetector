@@ -29,4 +29,16 @@ plt.ylabel('Y')
 plt.title('Frame vs Y for each ID')
 plt.legend()
 
-plt.savefig('output_plot.png')
+from datetime import datetime
+
+current_datetime = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+csv_filename = os.path.splitext(os.path.basename(latest_file))[0]
+
+output_dir = '../plots'
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+filename = f'plot_{csv_filename}.png'
+plt.savefig(os.path.join(output_dir, filename))
+print(f"Plot saved to {output_dir}/{filename}")
