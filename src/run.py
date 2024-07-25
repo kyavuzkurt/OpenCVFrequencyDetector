@@ -53,7 +53,7 @@ f_var = tk.DoubleVar()
 tk.Entry(app, textvariable=f_var).grid(row=3, column=1, padx=10, pady=10)
 
 tk.Label(app, text="a variable:").grid(row=4, column=0, padx=10, pady=10)
-a_var = tk.DoubleVar()
+a_var = tk.DoubleVar(value=0)
 tk.Entry(app, textvariable=a_var).grid(row=4, column=1, padx=10, pady=10)
 
 tk.Label(app, text="Select number of objects:").grid(row=5, column=0, padx=10, pady=10)

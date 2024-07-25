@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--max_objects', '-m', type=int, default=12, help='Maximum number of objects to track')
     parser.add_argument('--amp', type=float, help='Amplitude value')
     parser.add_argument('--f', type=float, help='Frequency value')
-    parser.add_argument('--a', type=float, help='Another parameter')
+    parser.add_argument('--a', type=float, help='Another parameter', default=0)
     parser.add_argument('--p', type=float, help='Percentage')
     args = parser.parse_args()
 
