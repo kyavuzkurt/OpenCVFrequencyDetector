@@ -6,15 +6,16 @@ import os
 import datetime
 
 class ColorDetector:
-    def __init__(self, video_paths, color, max_objects, amp, f, a):
+    def __init__(self, video_paths, color, max_objects, amp, f, a, percentage):
         self.video_paths = video_paths
         self.color = color  
         self.max_objects = max_objects
         self.amp = amp
         self.f = f
         self.a = a
+        self.percentage = percentage
         if color == 'green':
-            self.hue_low, self.saturation_low, self.value_low = 25, 80, 80
+            self.hue_low, self.saturation_low, self.value_low = 25, 60, 60
             self.hue_high, self.saturation_high, self.value_high = 95, 255, 255
         elif color == 'blue':
             self.hue_low, self.saturation_low, self.value_low = 100, 150, 50
@@ -34,21 +35,10 @@ class ColorDetector:
         output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../output_csvs")
         os.makedirs(output_dir, exist_ok=True)
 
-        raw_video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../raw_videos")
-        os.makedirs(raw_video_dir, exist_ok=True)
-
-        masked_video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../masked_videos")
-        os.makedirs(masked_video_dir, exist_ok=True)
-
-        now = datetime.datetime.now()
-        timestamp = now.strftime("%d.%m.%Y_%H.%M.%S")
-        output_file = os.path.join(output_dir, f"camera_amp_{self.amp}_f_{self.f}_a_{self.a}_{timestamp}.csv")
-
-        fourcc = cv.VideoWriter_fourcc(*'mp4v')
-        raw_video_path = os.path.join(raw_video_dir, f"camera_raw_{timestamp}.mp4")
-        masked_video_path = os.path.join(masked_video_dir, f"camera_masked_{timestamp}.mp4")
-        out_raw = cv.VideoWriter(raw_video_path, fourcc, 20.0, (int(self.video.get(3)), int(self.video.get(4))))
-        out_masked = cv.VideoWriter(masked_video_path, fourcc, 20.0, (int(self.video.get(3)), int(self.video.get(4))))
+        color_number = '1' if self.color == 'green' else '2'
+        timestamp = datetime.datetime.now().strftime("%d.%m.%Y_%H.%M.%S")
+        
+        output_file = os.path.join(output_dir, f"camera_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.csv")
 
         with open(output_file, mode='w', newline='') as file:
             writer = csv.writer(file)
@@ -57,7 +47,7 @@ class ColorDetector:
             while True:
                 ret, frame = self.video.read()
                 if not ret:
-                    print(f"Error: Could not read frame from {video_path}") 
+                    print(f"End of video: {video_path}")  # Informative message instead of an error
                     break
 
                 # Calculate FPS
@@ -84,7 +74,7 @@ class ColorDetector:
                         if tracked_objects >= self.max_objects:
                             break
                         area = cv.contourArea(c)
-                        if area > 20:
+                        if area > 5:
                             x, y, w, h = cv.boundingRect(c)
                             tracker = cv.legacy.TrackerKCF_create()
                             self.multi_tracker.add(tracker, frame, (x, y, w, h))
@@ -100,8 +90,8 @@ class ColorDetector:
                     y_min = int(0.2361 * frame_height)
                     y_max = int(0.6944 * frame_height)
                 else:
-                    x_min = int(0.2 * frame_width)
-                    x_max = int(0.8 * frame_width)
+                    x_min = int(0)
+                    x_max = int(frame_width)
                     y_min = int(0.2 * frame_height)
                     y_max = int(0.8 * frame_height)
 
@@ -120,16 +110,12 @@ class ColorDetector:
                 frameHSV = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
                 mask = cv.inRange(frameHSV, lowerBound, upperBound)
                 masked_frame = cv.bitwise_and(frame, frame, mask=mask)
-                out_raw.write(frame)  
-                out_masked.write(masked_frame)  
+                
 
                 self.frame_count += 1
                 cv.imshow("Tracking", frame)
                 cv.imshow("Masked", masked_frame)
                 if cv.waitKey(1) == ord('q'):
                     break
-
         self.video.release()
-        out_raw.release()  
-        out_masked.release()  
         cv.destroyAllWindows()

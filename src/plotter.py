@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+
 list_of_files = glob.glob('../output_csvs/*.csv')
 latest_file = max(list_of_files, key=os.path.getctime)
 
@@ -39,6 +40,9 @@ output_dir = '../plots'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-filename = f'plot_{csv_filename}.png'
-plt.savefig(os.path.join(output_dir, filename))
-print(f"Plot saved to {output_dir}/{filename}")
+
+filename_eps = f'plot_{csv_filename}.eps'
+
+plt.savefig(os.path.join(output_dir, filename_eps))
+
+print(f"Plot saved to {output_dir}/{filename_eps}")

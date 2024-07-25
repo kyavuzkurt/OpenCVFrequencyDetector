@@ -4,7 +4,7 @@ import subprocess
 import os
 
 def browse_file():
-    filename = filedialog.askopenfilename(filetypes=[("MP4 files", "*.MP4"), ("AVI files", "*.avi"), ("MOV files", "*.mov"), ("MKV files", "*.mkv")])
+    filename = filedialog.askopenfilename(filetypes=[("MP4 files", "*.MP4"), ("MP4 files", "*.mp4"),("AVI files", "*.avi"), ("MOV files", "*.mov"), ("MKV files", "*.mkv")])
     if filename:
         video_path.set(filename)
 
@@ -15,16 +15,27 @@ def run_main():
     f = f_var.get()
     a = a_var.get()
     m = m_var.get()
+    p = p_var.get()
     plot = plot_var.get()
+    if color == 'green':
+        color_number = 1
+    elif color == 'blue':
+        color_number = 2
     
-    if not video or not color or not amp or not f or not a or not m:
-        messagebox.showerror("Error", "Please fill in all fields.")
+    if not video or not color or not m:
+        messagebox.showerror("Error", "Please fill in required fields.")
         return
 
-    command = f"python main.py --video {video} --color {color} --amp {amp} --f {f} --a {a} --m {m}"
+    command = f"python main.py --video {video} --color {color} --amp {amp} --f {f} --a {a} --m {m} --p {p}"
+    masked_command = f"python maskedvideoexport.py --video_path {video} --color_number {color_number} --amp {amp} --f {f} --a {a} --p {p}"
+
     try:
-        subprocess.run(command, check=True, shell=True)
-        messagebox.showinfo("Success", "Color detection completed successfully.")
+        #subprocess.run(command, check=True, shell=True)
+        #messagebox.showinfo("Success", "Color detection completed successfully.")
+        
+        subprocess.run(masked_command, check=True, shell=True)
+        messagebox.showinfo("Success", "Masked video export completed successfully.")
+        
         if plot:
             subprocess.run("python plotter.py", check=True, shell=True)
             messagebox.showinfo("Success", "Plotting completed successfully.")

@@ -26,7 +26,7 @@ def main():
         logging.error(f"Video file does not exist: {video_path}")
         return
 
-    detector = cd.ColorDetector([video_path], args.color, args.max_objects, args.amp, args.f, args.a)
+    detector = cd.ColorDetector([video_path], args.color, args.max_objects, args.amp, args.f, args.a, args.p)
     detector.run(video_path, 0)
 
 if __name__ == "__main__":
