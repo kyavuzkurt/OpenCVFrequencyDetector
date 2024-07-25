@@ -21,7 +21,6 @@ class ColorDetector:
             self.hue_low, self.saturation_low, self.value_low = 100, 150, 50
             self.hue_high, self.saturation_high, self.value_high = 140, 255, 255
         self.frame_count = 0
-        self.multi_tracker = cv.legacy.MultiTracker_create()
         self.start_time = time.time()
 
     def run(self, video_path, video_index):
@@ -58,7 +57,6 @@ class ColorDetector:
                 frame = cv.resize(frame, (1280, 720))
 
                 if self.frame_count % 1 == 0:  
-                    self.multi_tracker = cv.legacy.MultiTracker_create()
                     frameHSV = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
                     lowerBound = np.array([self.hue_low, self.saturation_low, self.value_low])
                     upperBound = np.array([self.hue_high, self.saturation_high, self.value_high])
@@ -76,34 +74,25 @@ class ColorDetector:
                         area = cv.contourArea(c)
                         if area > 5:
                             x, y, w, h = cv.boundingRect(c)
-                            tracker = cv.legacy.TrackerKCF_create()
-                            self.multi_tracker.add(tracker, frame, (x, y, w, h))
                             tracked_objects += 1
+                            center = (x + w // 2, y + h // 2)
 
-                success, boxes = self.multi_tracker.update(frame)
-                frame_height = frame.shape[0]
-                frame_width = frame.shape[1]
+                            if self.color == 'blue':
+                                x_min = int(0.3516 * frame.shape[1])
+                                x_max = int(0.5313 * frame.shape[1])
+                                y_min = int(0.2361 * frame.shape[0])
+                                y_max = int(0.6944 * frame.shape[0])
+                            else:
+                                x_min = int(0)
+                                x_max = int(frame.shape[1])
+                                y_min = int(0.2 * frame.shape[0])
+                                y_max = int(0.8 * frame.shape[0])
 
-                if self.color == 'blue':
-                    x_min = int(0.3516 * frame_width)
-                    x_max = int(0.5313 * frame_width)
-                    y_min = int(0.2361 * frame_height)
-                    y_max = int(0.6944 * frame_height)
-                else:
-                    x_min = int(0)
-                    x_max = int(frame_width)
-                    y_min = int(0.2 * frame_height)
-                    y_max = int(0.8 * frame_height)
-
-                for i, box in enumerate(boxes):
-                    x, y, w, h = [int(v) for v in box]
-                    center = (x + w // 2, y + h // 2)
-
-                    if x_min <= center[0] <= x_max and y_min <= center[1] <= y_max:
-                        rect_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
-                        cv.rectangle(frame, (x, y), (x + w, y + h), rect_color, 2)
-                        cv.circle(frame, center, 5, (0, 255, 0), -1)
-                        writer.writerow([self.frame_count, i + 1, center[0], center[1]])
+                            if x_min <= center[0] <= x_max and y_min <= center[1] <= y_max:
+                                rect_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
+                                cv.rectangle(frame, (x, y), (x + w, y + h), rect_color, 2)
+                                cv.circle(frame, center, 5, (0, 255, 0), -1)
+                                writer.writerow([self.frame_count, tracked_objects, center[0], center[1]])
 
                 cv.putText(frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 

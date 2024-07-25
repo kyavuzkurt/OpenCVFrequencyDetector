@@ -28,18 +28,24 @@ def run_main():
 
     command = f"python main.py --video {video} --color {color} --amp {amp} --f {f} --a {a} --m {m} --p {p}"
     masked_command = f"python maskedvideoexport.py --video_path {video} --color_number {color_number} --amp {amp} --f {f} --a {a} --p {p}"
-
+    bounding_command = f"python bounding_box_video.py --video_path {video} --color_number {color_number} --amp {amp} --f {f} --a {a} --p {p}"
+    
+    processes = []
     try:
-        #subprocess.run(command, check=True, shell=True)
-        #messagebox.showinfo("Success", "Color detection completed successfully.")
-        
-        subprocess.run(masked_command, check=True, shell=True)
-        messagebox.showinfo("Success", "Masked video export completed successfully.")
+        #processes.append(subprocess.Popen(command, shell=True))
+        #processes.append(subprocess.Popen(masked_command, shell=True))
+        processes.append(subprocess.Popen(bounding_command, shell=True))
         
         if plot:
-            subprocess.run("python plotter.py", check=True, shell=True)
-            messagebox.showinfo("Success", "Plotting completed successfully.")
+            processes.append(subprocess.Popen("python plotter.py", shell=True))
+        
+        for process in processes:
+            process.wait()
+        
+        messagebox.showinfo("Success", "All processes completed successfully.")
+
     except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"An error occurred: {e}")
         messagebox.showerror("Error", f"An error occurred: {e}")
 
 app = tk.Tk()
