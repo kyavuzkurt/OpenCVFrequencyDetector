@@ -1,7 +1,4 @@
 import colordetector as cd
-import cv2 as cv
-import csv
-import datetime
 import argparse
 import logging
 import os

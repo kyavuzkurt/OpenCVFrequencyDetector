@@ -4,6 +4,7 @@ import csv
 import time
 import os
 import datetime
+from tqdm import tqdm
 
 class ColorDetector:
     def __init__(self, video_paths, color, max_objects, amp, f, a, percentage):
@@ -38,26 +39,37 @@ class ColorDetector:
         timestamp = datetime.datetime.now().strftime("%d.%m.%Y_%H.%M.%S")
         
         output_file = os.path.join(output_dir, f"camera_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.csv")
+        
+        fourcc = cv.VideoWriter_fourcc(*'mp4v')
+        processed_video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../processed_videos")
+        masked_video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../masked_videos")
+        os.makedirs(processed_video_dir, exist_ok=True)
+        os.makedirs(masked_video_dir, exist_ok=True)
+
+        processed_video_path = os.path.join(processed_video_dir, f"camera_processed_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.mp4")
+        masked_video_path = os.path.join(masked_video_dir, f"camera_masked_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.mp4")
+        
+        processed_writer = cv.VideoWriter(processed_video_path, fourcc, 20.0, (640, 480))
+        masked_writer = cv.VideoWriter(masked_video_path, fourcc, 20.0, (640, 480))
 
         with open(output_file, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['Frame', 'ID', 'X', 'Y'])
 
-            while True:
+            total_frames = int(self.video.get(cv.CAP_PROP_FRAME_COUNT))
+            for _ in tqdm(range(total_frames), desc="Processing frames"):
                 ret, frame = self.video.read()
                 if not ret:
-                    print(f"End of video: {video_path}")  # Informative message instead of an error
+                    print(f"End of video: {video_path}")  
                     break
 
-                # Calculate FPS
                 elapsed_time = time.time() - self.start_time
                 fps = self.frame_count / elapsed_time if elapsed_time > 0 else 0
 
-                # Resize frame to 720p
-                frame = cv.resize(frame, (1280, 720))
+                small_frame = cv.resize(frame, (640, 480))
 
                 if self.frame_count % 1 == 0:  
-                    frameHSV = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+                    frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
                     lowerBound = np.array([self.hue_low, self.saturation_low, self.value_low])
                     upperBound = np.array([self.hue_high, self.saturation_high, self.value_high])
                     mask = cv.inRange(frameHSV, lowerBound, upperBound)
@@ -78,33 +90,33 @@ class ColorDetector:
                             center = (x + w // 2, y + h // 2)
 
                             if self.color == 'blue':
-                                x_min = int(0.3516 * frame.shape[1])
-                                x_max = int(0.5313 * frame.shape[1])
-                                y_min = int(0.2361 * frame.shape[0])
-                                y_max = int(0.6944 * frame.shape[0])
+                                x_min = int(0.3516 * small_frame.shape[1])
+                                x_max = int(0.5313 * small_frame.shape[1])
+                                y_min = int(0.2361 * small_frame.shape[0])
+                                y_max = int(0.6944 * small_frame.shape[0])
                             else:
                                 x_min = int(0)
-                                x_max = int(frame.shape[1])
-                                y_min = int(0.2 * frame.shape[0])
-                                y_max = int(0.8 * frame.shape[0])
+                                x_max = int(small_frame.shape[1])
+                                y_min = int(0.2 * small_frame.shape[0])
+                                y_max = int(0.8 * small_frame.shape[0])
 
                             if x_min <= center[0] <= x_max and y_min <= center[1] <= y_max:
                                 rect_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
-                                cv.rectangle(frame, (x, y), (x + w, y + h), rect_color, 2)
-                                cv.circle(frame, center, 5, (0, 255, 0), -1)
+                                cv.rectangle(small_frame, (x, y), (x + w, y + h), rect_color, 2)
                                 writer.writerow([self.frame_count, tracked_objects, center[0], center[1]])
 
-                cv.putText(frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+                cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 
-                frameHSV = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+                frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
                 mask = cv.inRange(frameHSV, lowerBound, upperBound)
-                masked_frame = cv.bitwise_and(frame, frame, mask=mask)
+                masked_frame = cv.bitwise_and(small_frame, small_frame, mask=mask)
                 
+                #processed_writer.write(small_frame)
+                #masked_writer.write(masked_frame)
 
                 self.frame_count += 1
-                cv.imshow("Tracking", frame)
-                cv.imshow("Masked", masked_frame)
-                if cv.waitKey(1) == ord('q'):
-                    break
+
         self.video.release()
+        processed_writer.release()
+        masked_writer.release()
         cv.destroyAllWindows()
