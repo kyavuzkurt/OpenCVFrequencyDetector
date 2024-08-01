@@ -45,13 +45,12 @@ def run_main():
     f = f_var.get()
     a = a_var.get()
     p = p_var.get()
-    color_number = 12 if color == 'green' else 2
     
     if not video or not color:
         messagebox.showerror("Error", "Please fill in required fields.")
         return
 
-    command = f"python main.py --video {video} --color {color_number} --amp {amp} --f {f} --a {a} --p {p}"
+    command = f"python main.py --video {video} --color {color} --amp {amp} --f {f} --a {a} --p {p} "
     try:
         subprocess.run(command, shell=True, check=True)
         
