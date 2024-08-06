@@ -40,17 +40,6 @@ class ColorDetector:
         
         output_file = os.path.join(output_dir, f"camera_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.csv")
         
-        fourcc = cv.VideoWriter_fourcc(*'mp4v')
-        processed_video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../processed_videos")
-        masked_video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../masked_videos")
-        os.makedirs(processed_video_dir, exist_ok=True)
-        os.makedirs(masked_video_dir, exist_ok=True)
-
-        processed_video_path = os.path.join(processed_video_dir, f"camera_processed_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.mp4")
-        masked_video_path = os.path.join(masked_video_dir, f"camera_masked_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.mp4")
-        
-        processed_writer = cv.VideoWriter(processed_video_path, fourcc, 20.0, (640, 480))
-        masked_writer = cv.VideoWriter(masked_video_path, fourcc, 20.0, (640, 480))
 
         with open(output_file, mode='w', newline='') as file:
             writer = csv.writer(file)
@@ -109,14 +98,7 @@ class ColorDetector:
 
                 frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
                 mask = cv.inRange(frameHSV, lowerBound, upperBound)
-                masked_frame = cv.bitwise_and(small_frame, small_frame, mask=mask)
-                
-                #processed_writer.write(small_frame)
-                #masked_writer.write(masked_frame)
-
                 self.frame_count += 1
 
         self.video.release()
-        processed_writer.release()
-        masked_writer.release()
         cv.destroyAllWindows()
