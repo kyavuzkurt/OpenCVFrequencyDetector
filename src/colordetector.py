@@ -86,15 +86,15 @@ class ColorDetector:
                             else:
                                 x_min = int(0)
                                 x_max = int(small_frame.shape[1])
-                                y_min = int(0.2 * small_frame.shape[0])
-                                y_max = int(0.8 * small_frame.shape[0])
+                                y_min = int(small_frame.shape[0])
+                                y_max = int(small_frame.shape[0])
 
                             if x_min <= center[0] <= x_max and y_min <= center[1] <= y_max:
                                 rect_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
                                 cv.rectangle(small_frame, (x, y), (x + w, y + h), rect_color, 2)
                                 writer.writerow([self.frame_count, tracked_objects, center[0], center[1]])
 
-                cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+#                cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 
                 frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
                 mask = cv.inRange(frameHSV, lowerBound, upperBound)
