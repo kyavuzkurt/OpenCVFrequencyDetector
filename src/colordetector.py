@@ -19,8 +19,8 @@ class ColorDetector:
             self.hue_low, self.saturation_low, self.value_low = 25, 60, 60
             self.hue_high, self.saturation_high, self.value_high = 95, 255, 255
         elif color == 'blue':
-            self.hue_low, self.saturation_low, self.value_low = 100, 150, 50
-            self.hue_high, self.saturation_high, self.value_high = 140, 255, 255
+            self.hue_low, self.saturation_low, self.value_low = 100, 150, 70
+            self.hue_high, self.saturation_high, self.value_high = 130, 255, 255
         self.frame_count = 0
         self.start_time = time.time()
 
@@ -74,9 +74,16 @@ class ColorDetector:
                             break
                         area = cv.contourArea(c)
                         if area > 5:
-                            x, y, w, h = cv.boundingRect(c)
+                            # Calculate center directly from moments
+                            M = cv.moments(c)
+                            if M["m00"] != 0:
+                                center_x = int(M["m10"] / M["m00"])
+                                center_y = int(M["m01"] / M["m00"])
+                            else:
+                                continue  # Skip this contour if division by zero
+
                             tracked_objects += 1
-                            center = (x + w // 2, y + h // 2)
+                            center = (center_x, center_y)
 
                             if self.color == 'blue':
                                 x_min = int(0.3516 * small_frame.shape[1])
@@ -86,19 +93,24 @@ class ColorDetector:
                             else:
                                 x_min = int(0)
                                 x_max = int(small_frame.shape[1])
-                                y_min = int(small_frame.shape[0])
+                                y_min = int(0)
                                 y_max = int(small_frame.shape[0])
 
                             if x_min <= center[0] <= x_max and y_min <= center[1] <= y_max:
-                                rect_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
-                                cv.rectangle(small_frame, (x, y), (x + w, y + h), rect_color, 2)
+                                dot_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
+                                cv.circle(small_frame, center, 3, dot_color, -1)
                                 writer.writerow([self.frame_count, tracked_objects, center[0], center[1]])
 
-#                cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+                cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 
                 frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
                 mask = cv.inRange(frameHSV, lowerBound, upperBound)
                 self.frame_count += 1
+                cv.imshow('Frame', small_frame)
+                cv.imshow('Mask', mask)
+                if cv.waitKey(1) & 0xFF == ord('q'):
+                    break
+
 
         self.video.release()
         cv.destroyAllWindows()
