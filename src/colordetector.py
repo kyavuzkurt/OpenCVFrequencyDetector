@@ -15,12 +15,6 @@ class ColorDetector:
         self.f = f
         self.a = a
         self.percentage = percentage
-        if color == 'green':
-            self.hue_low, self.saturation_low, self.value_low = 25, 60, 60
-            self.hue_high, self.saturation_high, self.value_high = 95, 255, 255
-        elif color == 'blue':
-            self.hue_low, self.saturation_low, self.value_low = 100, 150, 50
-            self.hue_high, self.saturation_high, self.value_high = 140, 255, 255
         self.frame_count = 0
         self.start_time = time.time()
 
@@ -40,7 +34,6 @@ class ColorDetector:
         
         output_file = os.path.join(output_dir, f"camera_{color_number}_amp_{self.amp}_f_{self.f}_p_{self.percentage}_a_{self.a}_{timestamp}.csv")
         
-
         with open(output_file, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['Frame', 'ID', 'X', 'Y'])
@@ -58,47 +51,27 @@ class ColorDetector:
                 small_frame = cv.resize(frame, (640, 480))
 
                 if self.frame_count % 1 == 0:  
-                    frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
-                    lowerBound = np.array([self.hue_low, self.saturation_low, self.value_low])
-                    upperBound = np.array([self.hue_high, self.saturation_high, self.value_high])
-                    mask = cv.inRange(frameHSV, lowerBound, upperBound)
+                    # ArUco marker detection
+                    gray = cv.cvtColor(small_frame, cv.COLOR_BGR2GRAY)
+                    aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
+                    parameters = cv.aruco.DetectorParameters()
+                    corners, ids, _ = cv.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
-                    kernel = np.ones((3, 3), np.uint8)
-                    mask = cv.erode(mask, kernel, iterations=2)
-                    mask = cv.dilate(mask, kernel, iterations=2)
+                    if ids is not None:
+                        for i in range(len(ids)):
+                            if i >= self.max_objects:
+                                break
+                            c = corners[i][0]
+                            center = (int(c[:, 0].mean()), int(c[:, 1].mean()))
+                            cv.aruco.drawDetectedMarkers(small_frame, corners)
+                            writer.writerow([self.frame_count, ids[i][0], center[0], center[1]])
 
-                    contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-                    tracked_objects = 0
-                    for c in contours:
-                        if tracked_objects >= self.max_objects:
-                            break
-                        area = cv.contourArea(c)
-                        if area > 5:
-                            x, y, w, h = cv.boundingRect(c)
-                            tracked_objects += 1
-                            center = (x + w // 2, y + h // 2)
+                cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 
-                            if self.color == 'blue':
-                                x_min = int(0.3516 * small_frame.shape[1])
-                                x_max = int(0.5313 * small_frame.shape[1])
-                                y_min = int(0.2361 * small_frame.shape[0])
-                                y_max = int(0.6944 * small_frame.shape[0])
-                            else:
-                                x_min = int(0)
-                                x_max = int(small_frame.shape[1])
-                                y_min = int(small_frame.shape[0])
-                                y_max = int(small_frame.shape[0])
-
-                            if x_min <= center[0] <= x_max and y_min <= center[1] <= y_max:
-                                rect_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
-                                cv.rectangle(small_frame, (x, y), (x + w, y + h), rect_color, 2)
-                                writer.writerow([self.frame_count, tracked_objects, center[0], center[1]])
-
-#                cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
-
-                frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
-                mask = cv.inRange(frameHSV, lowerBound, upperBound)
                 self.frame_count += 1
+                cv.imshow('Frame', small_frame)
+                if cv.waitKey(1) & 0xFF == ord('q'):
+                    break
 
         self.video.release()
         cv.destroyAllWindows()
