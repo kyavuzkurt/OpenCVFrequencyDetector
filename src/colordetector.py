@@ -19,8 +19,8 @@ class ColorDetector:
             self.hue_low, self.saturation_low, self.value_low = 25, 60, 60
             self.hue_high, self.saturation_high, self.value_high = 95, 255, 255
         elif color == 'blue':
-            self.hue_low, self.saturation_low, self.value_low = 100, 150, 70
-            self.hue_high, self.saturation_high, self.value_high = 130, 255, 255
+            self.hue_low, self.saturation_low, self.value_low = 90, 160, 80
+            self.hue_high, self.saturation_high, self.value_high = 125, 255, 255
         self.frame_count = 0
         self.start_time = time.time()
 
@@ -68,13 +68,20 @@ class ColorDetector:
                     mask = cv.dilate(mask, kernel, iterations=2)
 
                     contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+                    
+                    if self.color == 'blue':
+                        x_min = int(0.3516 * small_frame.shape[1])
+                        x_max = int(0.5313 * small_frame.shape[1])
+                        y_min = int(0.2361 * small_frame.shape[0])
+                        y_max = int(0.6944 * small_frame.shape[0])
+                    else:
+                        x_min, x_max = 0, small_frame.shape[1]
+                        y_min, y_max = 0, small_frame.shape[0]
+
                     tracked_objects = 0
                     for c in contours:
-                        if tracked_objects >= self.max_objects:
-                            break
                         area = cv.contourArea(c)
-                        if area > 5:
-                            # Calculate center directly from moments
+                        if area > 1:
                             M = cv.moments(c)
                             if M["m00"] != 0:
                                 center_x = int(M["m10"] / M["m00"])
@@ -82,34 +89,24 @@ class ColorDetector:
                             else:
                                 continue  # Skip this contour if division by zero
 
-                            tracked_objects += 1
-                            center = (center_x, center_y)
-
-                            if self.color == 'blue':
-                                x_min = int(0.3516 * small_frame.shape[1])
-                                x_max = int(0.5313 * small_frame.shape[1])
-                                y_min = int(0.2361 * small_frame.shape[0])
-                                y_max = int(0.6944 * small_frame.shape[0])
-                            else:
-                                x_min = int(0)
-                                x_max = int(small_frame.shape[1])
-                                y_min = int(0)
-                                y_max = int(small_frame.shape[0])
-
-                            if x_min <= center[0] <= x_max and y_min <= center[1] <= y_max:
+                            if x_min <= center_x <= x_max and y_min <= center_y <= y_max:
+                                tracked_objects += 1
                                 dot_color = (0, 255, 0) if self.color == 'blue' else (255, 0, 0)
-                                cv.circle(small_frame, center, 3, dot_color, -1)
-                                writer.writerow([self.frame_count, tracked_objects, center[0], center[1]])
+                                cv.circle(small_frame, (center_x, center_y), 3, dot_color, -1)
+                                writer.writerow([self.frame_count, tracked_objects, center_x, center_y])
+
+                                if tracked_objects >= self.max_objects:
+                                    break
 
                 cv.putText(small_frame, f"FPS: {fps:.2f}", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 
                 frameHSV = cv.cvtColor(small_frame, cv.COLOR_BGR2HSV)
                 mask = cv.inRange(frameHSV, lowerBound, upperBound)
                 self.frame_count += 1
-                cv.imshow('Frame', small_frame)
-                cv.imshow('Mask', mask)
-                if cv.waitKey(1) & 0xFF == ord('q'):
-                    break
+                #cv.imshow('Frame', small_frame)
+                #cv.imshow('Mask', mask)
+                #if cv.waitKey(1) & 0xFF == ord('q'):
+                #    break
 
 
         self.video.release()

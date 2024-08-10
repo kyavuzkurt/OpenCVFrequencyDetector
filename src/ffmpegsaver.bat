@@ -3,7 +3,7 @@ setlocal EnableDelayedExpansion
 
 :: Define the base directory and parameters
 set base_dir=E:\TestonLand
-set a_values=-0.05 -0.1
+set a_values=-0.20
 set frequencies=0.1 0.2 0.3 0.4 0.5
 set amplitude=400
 
