@@ -27,8 +27,8 @@ For a complete list of dependencies, see the `requirements.txt` file.
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/color-detector-multi-tracker.git
-   cd color-detector-multi-tracker
+   git clone [https://github.com/yourusername/color-detector-multi-tracker.git](https://github.com/kyavuzkurt/OpenCVFrequencyDetector)
+   cd OpenCVFrequencyDetector
    ```
 
 2. Install the required packages:
