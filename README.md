@@ -27,7 +27,7 @@ For a complete list of dependencies, see the `requirements.txt` file.
 
 1. Clone the repository:
    ```
-   git clone [(https://github.com/kyavuzkurt/OpenCVFrequencyDetector](https://github.com/kyavuzkurt/OpenCVFrequencyDetector)
+   git clone https://github.com/kyavuzkurt/OpenCVFrequencyDetector
    cd OpenCVFrequencyDetector
    ```
 
