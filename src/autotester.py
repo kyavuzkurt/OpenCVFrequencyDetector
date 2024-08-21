@@ -1,30 +1,30 @@
 import os
-import subprocess
 from colordetector import ColorDetector
-import tempfile
 
-base_dir = r"C:\Tests"
-a_values = [-0.10, -0.15]
+base_dir = r"D:\Testonland\TestResultsOrganized"
+a_values = [0.0, -0.05, -0.1, -0.15, -0.2]
 frequencies = [0.1, 0.2, 0.3, 0.4, 0.5]
-amplitude = 400
 
 def process_video(video_path, color, amp, freq, a, percentage):
     max_objects = 12 if color == 'green' else 2
     detector = ColorDetector([video_path], color, max_objects, amp, freq, a, percentage)
     detector.run(video_path, 0)
 
-def check_and_process(cam_dir, color, amp, freq, a):
-    
-    output_file = os.path.join(cam_dir, "output.mp4")
-    process_video(output_file, color, amp, freq, a, 5)  
-
 def main():
+    amp = 400
+    percentage = 5
+
     for a in a_values:
         for freq in frequencies:
-            for cam in ["cam1", "cam2"]:
-                color = "green" if cam == "cam1" else "blue"
-                cam_dir = os.path.join(base_dir, f"For_a={a}", f"Amplitude_400-Frequency_{freq}-a_{a}", "Amplitude_between_0-400", "Kamera", cam)
-                check_and_process(cam_dir, color, amplitude, freq, a)
+            folder_name = f"a={a}_f={freq}"
+            folder_path = os.path.join(base_dir, folder_name)
+            
+            if os.path.exists(folder_path):
+                for video_file in os.listdir(folder_path):
+                    if video_file.startswith("cam"):
+                        video_path = os.path.join(folder_path, video_file)
+                        color = "green" if "cam1" in video_file else "blue"
+                        process_video(video_path, color, amp, freq, a, percentage)
 
 if __name__ == "__main__":
     main()
