@@ -1,5 +1,3 @@
-Here's a GitHub README for the codebase:
-
 # Color Detector with Multi-Tracker
 
 This project provides a tool for detecting and tracking colored objects in videos. It includes a graphical user interface (GUI) for easy parameter setting and execution.
