@@ -1,102 +1,120 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk  # Add ttk for the progress bar
+from ttkbootstrap.tooltip import ToolTip  
 import subprocess
 import re
+import cv2 as cv
+import numpy as np
+from main import main
+import colordetector as cd
+
+def first_frame_extraction(video_path):
+    video = cv.VideoCapture(video_path)
+    if not video.isOpened():
+        print(f"Error: Could not open video. Path: {video_path}")
+        return False
+    first_frame = video.read()[1]
+    
+    def apply_hsv_filter(frame, hsv_values):
+        hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+        lower_bound = np.array(hsv_values[:3])
+        upper_bound = np.array(hsv_values[3:])
+        mask = cv.inRange(hsv_frame, lower_bound, upper_bound)
+        result = cv.bitwise_and(frame, frame, mask=mask)
+        return result
+
+    def on_trackbar(val):
+        hsv_values = [cv.getTrackbarPos(f'{label}', 'HSV Range Selector') for label in labels]
+        filtered_frame = apply_hsv_filter(first_frame, hsv_values)
+        combined_frame = cv.hconcat([first_frame, filtered_frame])
+        resized_frame = cv.resize(combined_frame, (combined_frame.shape[1] // 2, combined_frame.shape[0] // 2))
+        cv.imshow("First Frame and Filtered Frame", resized_frame)
+
+    if first_frame is not False:
+        cv.putText(first_frame, "Press 'q' to close and save HSV values", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        
+        labels = ['Hue Min', 'Saturation Min', 'Value Min', 'Hue Max', 'Saturation Max', 'Value Max']
+        cv.namedWindow('HSV Range Selector')
+        for i, label in enumerate(labels):
+            cv.createTrackbar(label, 'HSV Range Selector', 0, 255, on_trackbar)
+        
+        on_trackbar(0)  
+        while True:
+            if cv.waitKey(1) & 0xFF == ord('q'):
+                hsv_values = [cv.getTrackbarPos(f'{label}', 'HSV Range Selector') for label in labels]
+                hsv_string = ''.join(f'{value:03}' for value in hsv_values)
+                break
+        cv.destroyAllWindows()
+    return hsv_string
 
 def browse_file():
-    filename = filedialog.askopenfilename(filetypes=[("MP4 files", "*.MP4"), ("MP4 files", "*.mp4"),("AVI files", "*.avi"), ("MOV files", "*.mov"), ("MKV files", "*.mkv")])
-    if filename:
-        video_path.set(filename)
-        auto_fill_fields(filename)
+    file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi *.mov")])
+    if file_path:
+        video_path_entry.delete(0, tk.END)
+        video_path_entry.insert(0, file_path)
 
-def auto_fill_fields(filename):
-    # Extract the base name of the file
-    base_name = filename.split('/')[-1]
-    
-    # Use regex to find matching patterns
-    amp_match = re.search(r'amp(\d+(\.\d+)?)', base_name)
-    f_match = re.search(r'f(\d+(\.\d+)?)', base_name)
-    a_match = re.search(r'a(\d+(\.\d+)?)', base_name)
-    p_match = re.search(r'p(\d+(\.\d+)?)', base_name)
-    
-    auto_filled = False
-    
-    if amp_match:
-        amp_var.set(float(amp_match.group(1)))
-        auto_filled = True
-    if f_match:
-        f_var.set(float(f_match.group(1)))
-        auto_filled = True
-    if a_match:
-        a_var.set(float(a_match.group(1)))
-        auto_filled = True
-    if p_match:
-        p_var.set(float(p_match.group(1)))
-        auto_filled = True
-    
-    if auto_filled:
-        messagebox.showinfo("Auto-fill", "Fields have been auto-filled based on the file name.")
+def preview():
+    video_path = video_path_entry.get()
+    if not video_path:
+        messagebox.showerror("Error", "Please select a video file.")
+        return
+    global color_code
+    color_code = first_frame_extraction(video_path)
+
+def show_progress_window(total_frames):
+    progress_window = tk.Toplevel(root)
+    progress_window.title("Processing Video")
+    tk.Label(progress_window, text="Processing...").pack(pady=10)
+    progress_bar = ttk.Progressbar(progress_window, length=300, mode='determinate', maximum=total_frames)
+    progress_bar.pack(pady=10)
+    return progress_window, progress_bar
+
+def update_progress(progress_bar, value):
+    progress_bar['value'] = value
+    root.update_idletasks()
 
 def run_main():
-    video = video_path.get()
-    color_display = color_var.get()
-    color = color_mapping[color_display]
-    amp = amp_var.get()
-    f = f_var.get()
-    a = a_var.get()
-    p = p_var.get()
+    video_path = video_path_entry.get()
+    preview_enabled = preview_var.get()
+    max_objects = max_objects_var.get()
     
-    if not video or not color:
-        messagebox.showerror("Error", "Please fill in required fields.")
+    if not video_path:
+        messagebox.showerror("Error", "Please select a video file.")
         return
-
-    command = f"python main.py --video {video} --color {color} --amp {amp} --f {f} --a {a} --p {p} "
+    
     try:
-        subprocess.run(command, shell=True, check=True)
-        
-        if plot_var.get():
-            subprocess.run("python plotter.py", shell=True, check=True)
-        
-        messagebox.showinfo("Success", "All processes completed successfully.")
+        max_objects = int(max_objects)
+    except ValueError:
+        messagebox.showerror("Error", "Max objects must be an integer.")
+        return
+    
+    total_frames = cd.get_total_frames(video_path)
+    progress_window, progress_bar = show_progress_window(total_frames)
+    
+    detector = cd.ColorDetector(video_path, max_objects, color_code, preview_enabled, progress_bar)
+    detector.run()
+    
+    progress_window.destroy()
 
-    except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"An error occurred: {e}")
+root = tk.Tk()
+root.title("Video Processing")
 
-app = tk.Tk()
-app.title("Color Detector GUI")
+tk.Label(root, text="Video Path:").grid(row=0, column=0, padx=10, pady=10)
+video_path_entry = tk.Entry(root, width=50)
+video_path_entry.grid(row=0, column=1, padx=10, pady=10)
+tk.Button(root, text="Browse", command=browse_file).grid(row=0, column=2, padx=10, pady=10)
 
-tk.Label(app, text="Select Video File:").grid(row=0, column=0, padx=10, pady=10)
-video_path = tk.StringVar()
-tk.Entry(app, textvariable=video_path, width=50).grid(row=0, column=1, padx=10, pady=10)
-tk.Button(app, text="Browse", command=browse_file).grid(row=0, column=2, padx=10, pady=10)
+preview_var = tk.BooleanVar()
+preview_checkbutton = tk.Checkbutton(root, text="Processing Preview Enabled", variable=preview_var)
+preview_checkbutton.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+ToolTip(preview_checkbutton, text="When processing Preview Enabled is checked, video will not be saved.")  # Add tooltip
 
-tk.Label(app, text="Select Color:").grid(row=1, column=0, padx=10, pady=10)
-color_var = tk.StringVar()
-color_mapping = {"Blue": "blue", "Green": "green"}
-color_dropdown = tk.OptionMenu(app, color_var, *color_mapping.keys())
-color_dropdown.grid(row=1, column=1, padx=10, pady=10)
+tk.Label(root, text="Max Objects:").grid(row=2, column=0, padx=10, pady=10)
+max_objects_var = tk.StringVar()
+tk.Entry(root, textvariable=max_objects_var).grid(row=2, column=1, padx=10, pady=10)
 
-tk.Label(app, text="Amplitude (amp):").grid(row=2, column=0, padx=10, pady=10)
-amp_var = tk.DoubleVar()
-tk.Entry(app, textvariable=amp_var).grid(row=2, column=1, padx=10, pady=10)
+tk.Button(root, text="Run", command=run_main).grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+tk.Button(root, text="Select Color Range", command=preview).grid(row=3, column=2, padx=10, pady=10)
 
-tk.Label(app, text="Frequency (f):").grid(row=3, column=0, padx=10, pady=10)
-f_var = tk.DoubleVar()
-tk.Entry(app, textvariable=f_var).grid(row=3, column=1, padx=10, pady=10)
+root.mainloop()
 
-tk.Label(app, text="a variable:").grid(row=4, column=0, padx=10, pady=10)
-a_var = tk.DoubleVar(value=0)
-tk.Entry(app, textvariable=a_var).grid(row=4, column=1, padx=10, pady=10)
-
-tk.Label(app, text="Percentage:").grid(row=5, column=0, padx=10, pady=10)
-p_var = tk.DoubleVar()
-tk.Entry(app, textvariable=p_var).grid(row=5, column=1, padx=10, pady=10)
-
-tk.Label(app, text="Plot results:").grid(row=6, column=0, padx=10, pady=10)
-plot_var = tk.BooleanVar()
-tk.Checkbutton(app, text="Yes", variable=plot_var).grid(row=6, column=1, padx=10, pady=10)
-
-tk.Button(app, text="Run", command=run_main).grid(row=7, column=0, columnspan=3, pady=20)
-tk.Button(app, text="Exit", command=app.quit).grid(row=7, column=2, columnspan=3, pady=10)
-
-app.mainloop()
