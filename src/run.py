@@ -4,6 +4,7 @@ from ttkbootstrap.tooltip import ToolTip
 import cv2 as cv
 import numpy as np
 import colordetector as cd
+import plotter
 
 def first_frame_extraction(video_path):
     video = cv.VideoCapture(video_path)
@@ -95,7 +96,6 @@ def run_main():
     progress_window.destroy()
     
     if run_plotter:
-        import plotter
         plotter.run()
 
 root = tk.Tk()
