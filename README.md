@@ -38,6 +38,7 @@ For a complete list of dependencies, see the `requirements.txt` file.
 
 ### Docker
 Or you can use the docker image:
+
 First clone the repository:
 ```
 git clone https://github.com/kyavuzkurt/OpenCVFrequencyDetector
