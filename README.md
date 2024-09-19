@@ -72,6 +72,7 @@ Use the GUI to:
 ### Command Line
 
 For advanced users, you can run the detector from the command line:
+
 color_code is a 18 digit number representing the HSV values for the color to detect. first 9 are low values and last 9 are high values.
 
 ```
