@@ -15,9 +15,10 @@ This project provides a tool for detecting and tracking colored objects in video
 - Python 3.x
 - OpenCV
 - NumPy
-- Pandas
 - Matplotlib
 - Tkinter
+- tqdm
+- ttkbootstrap
 
 For a complete list of dependencies, see the `requirements.txt` file.
 
@@ -46,17 +47,19 @@ python src/run.py
 
 Use the GUI to:
 - Select a video file
-- Choose the color to detect (blue or green)
-- Set parameters (amplitude, frequency, etc.)
+- Choose the color to detect using the hsv trackbars 
+- Set max objects to detect
+- Enable/disable video processing preview(disables saving the output video)
 - Enable/disable result plotting
 - Run the detection process
 
 ### Command Line
 
 For advanced users, you can run the detector from the command line:
+color_code is a 18 digit number representing the HSV values for the color to detect. first 9 are low values and last 9 are high values.
 
 ```
-python src/main.py --video path/to/video.mp4 --color blue --amp 1.0 --f 1.0 --a 0.0 --p 50.0
+python src/main.py --video path/to/video.mp4 --color_code 000000000255255255 --max_objects 10 --preview_enabled True
 ```
 
 ## Project Structure

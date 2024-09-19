@@ -8,3 +8,5 @@ csv
 datetime
 logging
 subprocess
+tqdm
+ttkbootstrap

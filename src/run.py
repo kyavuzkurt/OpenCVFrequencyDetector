@@ -1,11 +1,8 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk  # Add ttk for the progress bar
+from tkinter import filedialog, messagebox, ttk  
 from ttkbootstrap.tooltip import ToolTip  
-import subprocess
-import re
 import cv2 as cv
 import numpy as np
-from main import main
 import colordetector as cd
 
 def first_frame_extraction(video_path):
@@ -77,6 +74,7 @@ def run_main():
     video_path = video_path_entry.get()
     preview_enabled = preview_var.get()
     max_objects = max_objects_var.get()
+    run_plotter = plotter_var.get()  # Get the state of the plotter checkbox
     
     if not video_path:
         messagebox.showerror("Error", "Please select a video file.")
@@ -95,6 +93,10 @@ def run_main():
     detector.run()
     
     progress_window.destroy()
+    
+    if run_plotter:
+        import plotter
+        plotter.run()
 
 root = tk.Tk()
 root.title("Video Processing")
@@ -107,14 +109,19 @@ tk.Button(root, text="Browse", command=browse_file).grid(row=0, column=2, padx=1
 preview_var = tk.BooleanVar()
 preview_checkbutton = tk.Checkbutton(root, text="Processing Preview Enabled", variable=preview_var)
 preview_checkbutton.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
-ToolTip(preview_checkbutton, text="When processing Preview Enabled is checked, video will not be saved.")  # Add tooltip
+ToolTip(preview_checkbutton, text="When processing Preview Enabled is checked, video will not be saved.")
 
 tk.Label(root, text="Max Objects:").grid(row=2, column=0, padx=10, pady=10)
 max_objects_var = tk.StringVar()
 tk.Entry(root, textvariable=max_objects_var).grid(row=2, column=1, padx=10, pady=10)
 
-tk.Button(root, text="Run", command=run_main).grid(row=3, column=0, columnspan=2, padx=10, pady=10)
-tk.Button(root, text="Select Color Range", command=preview).grid(row=3, column=2, padx=10, pady=10)
+plotter_var = tk.BooleanVar()
+plotter_checkbutton = tk.Checkbutton(root, text="Run Plotter", variable=plotter_var)
+plotter_checkbutton.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+ToolTip(plotter_checkbutton, text="When Run Plotter is checked, the plotter will run after the video is processed.") 
+
+tk.Button(root, text="Run", command=run_main).grid(row=4, column=0, columnspan=2, padx=10, pady=10)
+tk.Button(root, text="Select Color Range", command=preview).grid(row=4, column=2, padx=10, pady=10)
 
 root.mainloop()
 
